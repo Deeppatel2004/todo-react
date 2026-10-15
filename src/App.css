@@ -187,3 +187,11 @@
   text-decoration: line-through;
 }
 
+.todo {
+  text-decoration: none;
+}
+
+.todo.done {
+  text-decoration: line-through;
+}
+

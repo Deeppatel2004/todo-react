@@ -1,131 +1,122 @@
+import { useEffect, useState } from 'react';
+import TodoItem from './TodoItem';
+import TodoForm from './TodoForm';
+import TodoFilters from './TodoFilters';
+import {
+  addTodo,
+  toggleTodo,
+  deleteTodo
+} from './todoHelpers';
+import {
+  getTodos,
+  createTodo,
+  patchTodo,
+  removeTodo
+} from './api.js';
+import './App.css';
 
-import { useState } from 'react';
-import { visibleTodos, clearDone } from './todoHelpers';
-import TodoCount from './TodoCount.jsx';
-import Counter from './Counter.jsx';
+        async function handleAdd(e) {
+          e.preventDefault();
+         try {
+            const saved = await createTodo(text);
+            setTodos(applyServerTodo(todos, saved));
+            setText('');
+         } catch (e) {
+            setError(uiError(Number(e.message) || 0));
+          }
+        }
 
 
 function App() {
   const [todos, setTodos] = useState([]);
   const [text, setText] = useState('');
   const [mode, setMode] = useState('all');
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(''); const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const shown = visibleTodos(todos, mode, search);
+         useEffect(() => {
+          async function load() {
+            try {
+              setLoading(true);
+              setError('');
+              const data = await getTodos('all');
+              setTodos(data);
+            } catch (e) {
+             setError('Unable to load todos. Please try again.');
+           } finally {
+              setLoading(false);
+            }
+          }
+          load();
+        }, []);
 
-  function handleSubmit(e) {
-    e.preventDefault();
+  function handleSubmit(event) {
+    event.preventDefault();
 
     if (!text.trim()) return;
 
-    const newTodo = {
-      id: Date.now(),
-      text: text.trim(),
-      done: false,
-    };
-
-    setTodos([...todos, newTodo]);
+    setTodos(current => addTodo(current, text));
     setText('');
   }
 
-  function toggleTodo(id) {
-    setTodos(
-      todos.map(todo =>
-        todo.id === id
-          ? { ...todo, done: !todo.done }
-          : todo
-      )
-    );
+  function handleToggle(id) {
+    setTodos(current => toggleTodo(current, id));
   }
 
-  function deleteTodo(id) {
-    setTodos(todos.filter(todo => todo.id !== id));
+  function handleDelete(id) {
+    setTodos(current => deleteTodo(current, id));
   }
 
-  function handleClearDone() {
-    setTodos(clearDone(todos));
-  }
+  const visibleTodos = todos.filter(todo => {
+    const matchesMode =
+      mode === 'all' ||
+      (mode === 'active' && !todo.done) ||
+      (mode === 'done' && todo.done);
+
+    const matchesSearch = todo.text
+      .toLowerCase()
+      .includes(search.toLowerCase());
+
+    return matchesMode && matchesSearch;
+  });
 
   return (
-    <div>
-      <Counter />
+    <main>
       <h1>My Todos</h1>
 
-      <form onSubmit={handleSubmit}>
-        <input
-          value={text}
-          onChange={e => setText(e.target.value)}
-          placeholder="Enter a todo"
-        />
-        <button type="submit">Add</button>
-      </form>
-
-      <TodoCount todos={todos} />
-
-      <div>
-        <button
-          className={mode === 'all' ? 'btn active' : 'btn'}
-          onClick={() => setMode('all')}
-        >
-          All
-        </button>
-
-        <button
-          className={mode === 'active' ? 'btn active' : 'btn'}
-          onClick={() => setMode('active')}
-        >
-          Active
-        </button>
-
-        <button
-          className={mode === 'done' ? 'btn active' : 'btn'}
-          onClick={() => setMode('done')}
-        >
-          Done
-        </button>
-      </div>
-
-      <input
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-        placeholder="Search todos..."
+      <TodoForm
+        text={text}
+        onTextChange={setText}
+        onSubmit={handleSubmit}
       />
 
-      <button onClick={handleClearDone}>
-        Clear done
-      </button>
+      <TodoFilters
+        mode={mode}
+        onModeChange={setMode}
+        search={search}
+        onSearchChange={setSearch}
+      />
 
-      {shown.length === 0 ? (
-        <p>Nothing to show</p>
-      ) : (
-        <ul>
-          {shown.map(todo => (
-            <li key={todo.id}>
-              <span
-                onClick={() => toggleTodo(todo.id)}
-                style={{
-                  textDecoration: todo.done
-                    ? 'line-through'
-                    : 'none',
-                  cursor: 'pointer',
-                }}
-              >
-                {todo.text}
-              </span>
+    {loading && <p>Loading...</p>}
 
-              <button onClick={() => toggleTodo(todo.id)}>
-                {todo.done ? 'Undo' : 'Done'}
-              </button>
+    {error && <p className="error">{error}</p>}
 
-              <button onClick={() => deleteTodo(todo.id)}>
-                Delete
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
+    {!loading && !error && (
+
+      <ul>
+        {visibleTodos.map(todo => (
+          <TodoItem
+            key={todo.id}
+            todo={todo}
+            onToggle={handleToggle}
+            onDelete={handleDelete}
+          />
+        ))}
+      </ul>
+    )}
+    </main>
+      );
 }
 
-export default App;
+
+export default App

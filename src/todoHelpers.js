@@ -1,18 +1,30 @@
-export function visibleTodos(todos, mode, search) {
-  return todos.filter(todo => {
-    const matchesMode =
-      mode === 'all' ||
-      (mode === 'active' && !todo.done) ||
-      (mode === 'done' && todo.done);
+export function addTodo(todos, text) {
+  const trimmed = text.trim();
 
-    const matchesSearch = todo.text
-      .toLowerCase()
-      .includes(search.toLowerCase());
+  if (!trimmed) return todos;
 
-    return matchesMode && matchesSearch;
-  });
+  const nextId = todos.length === 0
+    ? 1
+    : Math.max(...todos.map(todo => todo.id)) + 1;
+
+  return [
+    ...todos,
+    {
+      id: nextId,
+      text: trimmed,
+      done: false
+    }
+  ];
 }
 
-export function clearDone(todos) {
-  return todos.filter(todo => !todo.done);
+export function toggleTodo(todos, id) {
+  return todos.map(todo =>
+    todo.id === id
+      ? { ...todo, done: !todo.done }
+      : todo
+  );
+}
+
+export function deleteTodo(todos, id) {
+  return todos.filter(todo => todo.id !== id);
 }
