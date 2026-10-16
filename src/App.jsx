@@ -136,3 +136,46 @@ function App() {
 }
 
 export default App;
+
+
+
+
+/*
+
+// REACT ROUTER CODE 
+import { Routes, Route, Link } from 'react-router-dom';
+import Home from './pages/Home';
+import About from './pages/About';
+import TodoDetail from './pages/TodoDetail';
+import Setting from './pages/Setting';
+
+function NotFound() {
+  return <h1>404 - Page Not Found</h1>;
+}
+
+export default function App() {
+  return (
+    <>
+      <nav>
+        <Link to="/">Home</Link>
+        {' | '}
+        <Link to="/about">About</Link>
+        {' | '}
+        <Link to="/todos/5">Todo 5</Link>
+        {' | '}
+        <Link to="/Setting">Setting</Link>
+      </nav>
+
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/todos/:id" element={<TodoDetail />} />
+        <Route path="/Setting" element={<Setting />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </>
+  );
+} 
+*/
+
+
