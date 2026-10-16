@@ -3,11 +3,6 @@ import TodoItem from './TodoItem';
 import TodoForm from './TodoForm';
 import TodoFilters from './TodoFilters';
 import {
-  addTodo,
-  toggleTodo,
-  deleteTodo
-} from './todoHelpers';
-import {
   getTodos,
   createTodo,
   patchTodo,
@@ -15,58 +10,98 @@ import {
 } from './api.js';
 import './App.css';
 
-        async function handleAdd(e) {
-          e.preventDefault();
-         try {
-            const saved = await createTodo(text);
-            setTodos(applyServerTodo(todos, saved));
-            setText('');
-         } catch (e) {
-            setError(uiError(Number(e.message) || 0));
-          }
-        }
-
-
 function App() {
   const [todos, setTodos] = useState([]);
   const [text, setText] = useState('');
   const [mode, setMode] = useState('all');
-  const [search, setSearch] = useState(''); const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
 
-         useEffect(() => {
-          async function load() {
-            try {
-              setLoading(true);
-              setError('');
-              const data = await getTodos('all');
-              setTodos(data);
-            } catch (e) {
-             setError('Unable to load todos. Please try again.');
-           } finally {
-              setLoading(false);
-            }
-          }
-          load();
-        }, []);
+  // Load todos from the API
+  useEffect(() => {
+    async function loadTodos() {
+      try {
+        setLoading(true);
+        setError('');
 
-  function handleSubmit(event) {
+        const data = await getTodos('all');
+        setTodos(data);
+      } catch (err) {
+        setError('Unable to load todos. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadTodos();
+  }, []);
+
+  // Add todo through the API
+  async function handleSubmit(event) {
     event.preventDefault();
 
-    if (!text.trim()) return;
+    if (!text.trim() || busy) return;
 
-    setTodos(current => addTodo(current, text));
-    setText('');
+    try {
+      setBusy(true);
+      setError('');
+
+      const savedTodo = await createTodo(text.trim());
+
+      setTodos(current => [...current, savedTodo]);
+      setText('');
+    } catch (err) {
+      setError(
+        err.message === '400'
+          ? 'Please check what you typed.'
+          : 'Unable to add todo. Please try again.'
+      );
+    } finally {
+      setBusy(false);
+    }
   }
 
-  function handleToggle(id) {
-    setTodos(current => toggleTodo(current, id));
+  // Toggle Done / Undo through the API
+  async function handleToggle(id) {
+    const todo = todos.find(item => item.id === id);
+
+    if (!todo) return;
+
+    try {
+      setError('');
+
+      const updatedTodo = await patchTodo(id, {
+        done: !todo.done
+      });
+
+      setTodos(current =>
+        current.map(item =>
+          item.id === id ? updatedTodo : item
+        )
+      );
+    } catch (err) {
+      setError('Unable to update todo. Please try again.');
+    }
   }
 
-  function handleDelete(id) {
-    setTodos(current => deleteTodo(current, id));
+  // Delete todo through the API
+  async function handleDelete(id) {
+    try {
+      setError('');
+
+      await removeTodo(id);
+
+      setTodos(current =>
+        current.filter(item => item.id !== id)
+      );
+    } catch (err) {
+      setError('Unable to delete todo. Please try again.');
+    }
   }
 
+  // Filter and search todos
   const visibleTodos = todos.filter(todo => {
     const matchesMode =
       mode === 'all' ||
@@ -90,6 +125,8 @@ function App() {
         onSubmit={handleSubmit}
       />
 
+      {busy && <p>Saving todo...</p>}
+
       <TodoFilters
         mode={mode}
         onModeChange={setMode}
@@ -97,26 +134,24 @@ function App() {
         onSearchChange={setSearch}
       />
 
-    {loading && <p>Loading...</p>}
+      {loading && <p>Loading...</p>}
 
-    {error && <p className="error">{error}</p>}
+      {error && <p className="error">{error}</p>}
 
-    {!loading && !error && (
-
-      <ul>
-        {visibleTodos.map(todo => (
-          <TodoItem
-            key={todo.id}
-            todo={todo}
-            onToggle={handleToggle}
-            onDelete={handleDelete}
-          />
-        ))}
-      </ul>
-    )}
+      {!loading && (
+        <ul>
+          {visibleTodos.map(todo => (
+            <TodoItem
+              key={todo.id}
+              todo={todo}
+              onToggle={handleToggle}
+              onDelete={handleDelete}
+            />
+          ))}
+        </ul>
+      )}
     </main>
-      );
+  );
 }
 
-
-export default App
+export default App;

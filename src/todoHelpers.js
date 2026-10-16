@@ -23,7 +23,7 @@ export function toggleTodo(todos, id) {
       ? { ...todo, done: !todo.done }
       : todo
   );
-}
+} 
 
 export function deleteTodo(todos, id) {
   return todos.filter(todo => todo.id !== id);
