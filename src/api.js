@@ -1,3 +1,4 @@
+
 const BASE = 'https://todo-api-kr2p.onrender.com';
 
 function requestInit(method = 'GET', body = undefined) {
@@ -12,19 +13,26 @@ function requestInit(method = 'GET', body = undefined) {
   };
 }
 
+// Build query string for the selected filter
+function buildQuery(mode) {
+  if (mode === 'active') return '?done=false';
+  if (mode === 'done') return '?done=true';
+  return '';
+}
+
 export async function getTodos(mode = 'all') {
-  const res = await fetch(BASE + '/todos', requestInit());
+  const query = buildQuery(mode);
+
+  const res = await fetch(
+    BASE + '/todos' + query,
+    requestInit()
+  );
 
   if (!res.ok) {
-    throw new Error('Failed to load todos');
+    throw new Error(String(res.status));
   }
 
-  const data = await res.json();
-
-  if (mode === 'active') return data.filter(todo => !todo.done);
-  if (mode === 'done') return data.filter(todo => todo.done);
-
-  return data;
+  return res.json();
 }
 
 export async function createTodo(text) {
@@ -33,7 +41,9 @@ export async function createTodo(text) {
     requestInit('POST', { text })
   );
 
-  if (!res.ok) throw new Error('Failed to create todo');
+  if (!res.ok) {
+    throw new Error(String(res.status));
+  }
 
   return res.json();
 }
@@ -44,7 +54,9 @@ export async function patchTodo(id, changes) {
     requestInit('PATCH', changes)
   );
 
-  if (!res.ok) throw new Error('Failed to update todo');
+  if (!res.ok) {
+    throw new Error(String(res.status));
+  }
 
   return res.json();
 }
@@ -55,5 +67,9 @@ export async function removeTodo(id) {
     requestInit('DELETE')
   );
 
-  if (!res.ok) throw new Error('Failed to delete todo');
+  if (!res.ok) {
+    throw new Error(String(res.status));
+  }
+
+  // A successful DELETE may return 204 No Content.
 }

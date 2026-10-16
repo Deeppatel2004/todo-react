@@ -1,7 +1,14 @@
+
 import { useEffect, useState } from 'react';
 import TodoItem from './TodoItem';
 import TodoForm from './TodoForm';
 import TodoFilters from './TodoFilters';
+import {
+  deleteTodo,
+  applyServerTodo,
+  uiError,
+  visibleTodos
+} from './todoHelpers';
 import {
   getTodos,
   createTodo,
@@ -19,14 +26,14 @@ function App() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
-  // Load todos from the API
+  // Load todos from the API using the selected mode
   useEffect(() => {
     async function loadTodos() {
       try {
         setLoading(true);
         setError('');
 
-        const data = await getTodos('all');
+        const data = await getTodos(mode);
         setTodos(data);
       } catch (err) {
         setError('Unable to load todos. Please try again.');
@@ -36,9 +43,9 @@ function App() {
     }
 
     loadTodos();
-  }, []);
+  }, [mode]);
 
-  // Add todo through the API
+  // Add through the API
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -48,72 +55,46 @@ function App() {
       setBusy(true);
       setError('');
 
-      const savedTodo = await createTodo(text.trim());
+      const saved = await createTodo(text.trim());
 
-      setTodos(current => [...current, savedTodo]);
+      setTodos(current => applyServerTodo(current, saved));
       setText('');
     } catch (err) {
-      setError(
-        err.message === '400'
-          ? 'Please check what you typed.'
-          : 'Unable to add todo. Please try again.'
-      );
+      setError(uiError(Number(err.message) || 0));
     } finally {
       setBusy(false);
     }
   }
 
-  // Toggle Done / Undo through the API
-  async function handleToggle(id) {
-    const todo = todos.find(item => item.id === id);
-
-    if (!todo) return;
-
+  // Toggle through the API
+  async function handleToggle(todo) {
     try {
       setError('');
 
-      const updatedTodo = await patchTodo(id, {
+      const saved = await patchTodo(todo.id, {
         done: !todo.done
       });
 
-      setTodos(current =>
-        current.map(item =>
-          item.id === id ? updatedTodo : item
-        )
-      );
+      setTodos(current => applyServerTodo(current, saved));
     } catch (err) {
-      setError('Unable to update todo. Please try again.');
+      setError('Could not update');
     }
   }
 
-  // Delete todo through the API
+  // Delete through the API
   async function handleDelete(id) {
     try {
       setError('');
 
       await removeTodo(id);
 
-      setTodos(current =>
-        current.filter(item => item.id !== id)
-      );
+      setTodos(current => deleteTodo(current, id));
     } catch (err) {
-      setError('Unable to delete todo. Please try again.');
+      setError('Could not delete');
     }
   }
 
-  // Filter and search todos
-  const visibleTodos = todos.filter(todo => {
-    const matchesMode =
-      mode === 'all' ||
-      (mode === 'active' && !todo.done) ||
-      (mode === 'done' && todo.done);
-
-    const matchesSearch = todo.text
-      .toLowerCase()
-      .includes(search.toLowerCase());
-
-    return matchesMode && matchesSearch;
-  });
+  const filteredTodos = visibleTodos(todos, mode, search);
 
   return (
     <main>
@@ -140,7 +121,7 @@ function App() {
 
       {!loading && (
         <ul>
-          {visibleTodos.map(todo => (
+          {filteredTodos.map(todo => (
             <TodoItem
               key={todo.id}
               todo={todo}

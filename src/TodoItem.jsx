@@ -1,9 +1,10 @@
+
 function TodoItem({ todo, onToggle, onDelete }) {
   return (
     <li className={todo.done ? 'todo done' : 'todo'}>
       <span>{todo.text}</span>
 
-      <button onClick={() => onToggle(todo.id)}>
+      <button onClick={() => onToggle(todo)}>
         {todo.done ? 'Undo' : 'Done'}
       </button>
 
