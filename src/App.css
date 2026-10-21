@@ -182,20 +182,3 @@
     border-right-color: var(--border);
   }
 }
-
-.done {
-  text-decoration: line-through;
-}
-
-.todo {
-  text-decoration: none;
-}
-
-.todo.done {
-  text-decoration: line-through;
-}   
-
-button{
-margin: 3px;
-}
-

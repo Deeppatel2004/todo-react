@@ -13,63 +13,49 @@ function requestInit(method = 'GET', body = undefined) {
   };
 }
 
-// Build query string for the selected filter
-function buildQuery(mode) {
-  if (mode === 'active') return '?done=false';
-  if (mode === 'done') return '?done=true';
-  return '';
+async function request(path, options = requestInit()) {
+  const res = await fetch(`${BASE}${path}`, options);
+
+  if (!res.ok) {
+    throw new Error(String(res.status));
+  }
+
+  if (res.status === 204) {
+    return null;
+  }
+
+  return res.json();
 }
 
 export async function getTodos(mode = 'all') {
-  const query = buildQuery(mode);
+  const query = mode === 'all'
+    ? ''
+    : `?done=${mode === 'done'}`;
 
-  const res = await fetch(
-    BASE + '/todos' + query,
-    requestInit()
-  );
+  return request(`/todos${query}`);
+}
 
-  if (!res.ok) {
-    throw new Error(String(res.status));
-  }
-
-  return res.json();
+export async function getTodo(id) {
+  return request(`/todos/${encodeURIComponent(id)}`);
 }
 
 export async function createTodo(text) {
-  const res = await fetch(
-    BASE + '/todos',
+  return request(
+    '/todos',
     requestInit('POST', { text })
   );
-
-  if (!res.ok) {
-    throw new Error(String(res.status));
-  }
-
-  return res.json();
 }
 
 export async function patchTodo(id, changes) {
-  const res = await fetch(
-    `${BASE}/todos/${id}`,
+  return request(
+    `/todos/${encodeURIComponent(id)}`,
     requestInit('PATCH', changes)
   );
-
-  if (!res.ok) {
-    throw new Error(String(res.status));
-  }
-
-  return res.json();
 }
 
 export async function removeTodo(id) {
-  const res = await fetch(
-    `${BASE}/todos/${id}`,
+  return request(
+    `/todos/${encodeURIComponent(id)}`,
     requestInit('DELETE')
   );
-
-  if (!res.ok) {
-    throw new Error(String(res.status));
-  }
-
-  // A successful DELETE may return 204 No Content.
 }
