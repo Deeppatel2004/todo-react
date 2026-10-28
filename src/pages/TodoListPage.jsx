@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 
 import TodoItem from '../components/TodoItem';
@@ -8,12 +9,8 @@ import {
   getTodos,
   createTodo,
   patchTodo,
-<<<<<<< HEAD
   removeTodo,
   isUsingLocalStorage
-=======
-  removeTodo
->>>>>>> 2accb05a052019598bbb3f667497c3b77f47cf1f
 } from '../api';
 
 import { countLeft, filterTodos } from '../todoHelpers';
@@ -24,10 +21,7 @@ export default function TodoListPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-<<<<<<< HEAD
   const [usingLocalStorage, setUsingLocalStorage] = useState(false);
-=======
->>>>>>> 2accb05a052019598bbb3f667497c3b77f47cf1f
 
   async function load() {
     setLoading(true);
@@ -39,10 +33,7 @@ export default function TodoListPage() {
     } catch {
       setError('Unable to load todos. Please try again.');
     } finally {
-<<<<<<< HEAD
       setUsingLocalStorage(isUsingLocalStorage());
-=======
->>>>>>> 2accb05a052019598bbb3f667497c3b77f47cf1f
       setLoading(false);
     }
   }
@@ -65,10 +56,7 @@ export default function TodoListPage() {
       setError('Unable to add todo. Please try again.');
       return false;
     } finally {
-<<<<<<< HEAD
       setUsingLocalStorage(isUsingLocalStorage());
-=======
->>>>>>> 2accb05a052019598bbb3f667497c3b77f47cf1f
       setBusy(false);
     }
   }
@@ -91,11 +79,8 @@ export default function TodoListPage() {
       );
     } catch {
       setError('Unable to update todo. Please try again.');
-<<<<<<< HEAD
     } finally {
       setUsingLocalStorage(isUsingLocalStorage());
-=======
->>>>>>> 2accb05a052019598bbb3f667497c3b77f47cf1f
     }
   }
 
@@ -104,14 +89,13 @@ export default function TodoListPage() {
 
     try {
       await removeTodo(id);
-      setTodos(current => current.filter(item => item.id !== id));
+      setTodos(current =>
+        current.filter(item => item.id !== id)
+      );
     } catch {
       setError('Unable to delete todo. Please try again.');
-<<<<<<< HEAD
     } finally {
       setUsingLocalStorage(isUsingLocalStorage());
-=======
->>>>>>> 2accb05a052019598bbb3f667497c3b77f47cf1f
     }
   }
 
@@ -121,15 +105,12 @@ export default function TodoListPage() {
 
       <TodoForm onAdd={handleAdd} busy={busy} />
 
-<<<<<<< HEAD
       {usingLocalStorage && (
         <p role="status">
           The todo service is unavailable. Todos are saved in this browser only.
         </p>
       )}
 
-=======
->>>>>>> 2accb05a052019598bbb3f667497c3b77f47cf1f
       {error && (
         <p className="error" role="alert">
           {error}{' '}

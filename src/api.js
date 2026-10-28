@@ -20,13 +20,9 @@ async function request(path, options = requestInit()) {
   const res = await fetch(`${BASE}${path}`, options);
 
   if (!res.ok) {
-<<<<<<< HEAD
     const error = new Error(String(res.status));
     error.status = res.status;
     throw error;
-=======
-    throw new Error(String(res.status));
->>>>>>> 2accb05a052019598bbb3f667497c3b77f47cf1f
   }
 
   if (res.status === 204) {
@@ -34,7 +30,6 @@ async function request(path, options = requestInit()) {
   }
 
   return res.json();
-<<<<<<< HEAD
 }
 
 function readStoredTodos() {
@@ -42,6 +37,7 @@ function readStoredTodos() {
   if (stored === null) return [];
 
   const todos = JSON.parse(stored);
+
   if (!Array.isArray(todos)) {
     throw new Error('Stored todos are invalid.');
   }
@@ -50,7 +46,10 @@ function readStoredTodos() {
 }
 
 function writeStoredTodos(todos) {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+  window.localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(todos)
+  );
 }
 
 function updateStoredTodo(todo) {
@@ -74,18 +73,28 @@ function isApiUnavailable(error) {
 
 async function withLocalFallback(remoteOperation, localOperation) {
   if (useLocalStorage) {
-    return { value: await localOperation(), isLocal: true };
+    return {
+      value: await localOperation(),
+      isLocal: true
+    };
   }
 
   try {
-    return { value: await remoteOperation(), isLocal: false };
+    return {
+      value: await remoteOperation(),
+      isLocal: false
+    };
   } catch (error) {
     if (!isApiUnavailable(error)) {
       throw error;
     }
 
     useLocalStorage = true;
-    return { value: await localOperation(), isLocal: true };
+
+    return {
+      value: await localOperation(),
+      isLocal: true
+    };
   }
 }
 
@@ -102,14 +111,16 @@ function createLocalTodo(text) {
 
 function findLocalTodo(id) {
   const todo = readStoredTodos().find(item => item.id === id);
-  if (!todo) throw new Error('404');
+
+  if (!todo) {
+    throw new Error('404');
+  }
+
   return todo;
 }
 
 export function isUsingLocalStorage() {
   return useLocalStorage;
-=======
->>>>>>> 2accb05a052019598bbb3f667497c3b77f47cf1f
 }
 
 export async function getTodos(mode = 'all') {
@@ -117,24 +128,35 @@ export async function getTodos(mode = 'all') {
     ? ''
     : `?done=${mode === 'done'}`;
 
-<<<<<<< HEAD
   const result = await withLocalFallback(
     async () => {
       const todos = await request(`/todos${query}`);
+
       if (!Array.isArray(todos)) {
         throw new Error('The todo API returned an invalid list.');
       }
+
       return todos;
     },
     async () => {
       const todos = readStoredTodos();
-      if (mode === 'active') return todos.filter(todo => !todo.done);
-      if (mode === 'done') return todos.filter(todo => todo.done);
+
+      if (mode === 'active') {
+        return todos.filter(todo => !todo.done);
+      }
+
+      if (mode === 'done') {
+        return todos.filter(todo => todo.done);
+      }
+
       return todos;
     }
   );
 
-  if (!result.isLocal) writeStoredTodos(result.value);
+  if (!result.isLocal) {
+    writeStoredTodos(result.value);
+  }
+
   return result.value;
 }
 
@@ -144,7 +166,10 @@ export async function getTodo(id) {
     () => findLocalTodo(id)
   );
 
-  if (!result.isLocal) updateStoredTodo(result.value);
+  if (!result.isLocal) {
+    updateStoredTodo(result.value);
+  }
+
   return result.value;
 }
 
@@ -158,7 +183,10 @@ export async function createTodo(text) {
     }
   );
 
-  if (!result.isLocal) updateStoredTodo(result.value);
+  if (!result.isLocal) {
+    updateStoredTodo(result.value);
+  }
+
   return result.value;
 }
 
@@ -169,13 +197,20 @@ export async function patchTodo(id, changes) {
       requestInit('PATCH', changes)
     ),
     () => {
-      const todo = { ...findLocalTodo(id), ...changes };
+      const todo = {
+        ...findLocalTodo(id),
+        ...changes
+      };
+
       updateStoredTodo(todo);
       return todo;
     }
   );
 
-  if (!result.isLocal) updateStoredTodo(result.value);
+  if (!result.isLocal) {
+    updateStoredTodo(result.value);
+  }
+
   return result.value;
 }
 
@@ -186,42 +221,19 @@ export async function removeTodo(id) {
       requestInit('DELETE')
     ),
     () => {
-      writeStoredTodos(readStoredTodos().filter(todo => todo.id !== id));
+      writeStoredTodos(
+        readStoredTodos().filter(todo => todo.id !== id)
+      );
+
       return null;
     }
   );
 
   if (!result.isLocal) {
-    writeStoredTodos(readStoredTodos().filter(todo => todo.id !== id));
+    writeStoredTodos(
+      readStoredTodos().filter(todo => todo.id !== id)
+    );
   }
+
   return result.value;
 }
-=======
-  return request(`/todos${query}`);
-}
-
-export async function getTodo(id) {
-  return request(`/todos/${encodeURIComponent(id)}`);
-}
-
-export async function createTodo(text) {
-  return request(
-    '/todos',
-    requestInit('POST', { text })
-  );
-}
-
-export async function patchTodo(id, changes) {
-  return request(
-    `/todos/${encodeURIComponent(id)}`,
-    requestInit('PATCH', changes)
-  );
-}
-
-export async function removeTodo(id) {
-  return request(
-    `/todos/${encodeURIComponent(id)}`,
-    requestInit('DELETE')
-  );
-}
->>>>>>> 2accb05a052019598bbb3f667497c3b77f47cf1f
