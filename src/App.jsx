@@ -9,6 +9,7 @@ import TodoListPage from './pages/TodoListPage';
 import TodoDetailPage from './pages/TodoDetailPage';
 import AboutPage from './pages/AboutPage';
 import NotFound from './pages/NotFound';
+import './App.css';
 
 export default function App() {
   const { pathname } = useLocation();
@@ -26,8 +27,6 @@ export default function App() {
           <Link to="/" className={linkClass('/')}>
             Todos
           </Link>
-          { ' | ' }
-
           <Link to="/about" className={linkClass('/about')}>
             About
           </Link>
