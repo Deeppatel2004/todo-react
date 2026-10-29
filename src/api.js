@@ -1,5 +1,4 @@
-
-const BASE = 'https://todo-api-4y68.onrender.com';
+const BASE = import.meta.env.VITE_API_URL;
 const STORAGE_KEY = 'todo-react.todos.v1';
 
 let useLocalStorage = false;
