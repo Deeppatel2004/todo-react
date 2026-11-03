@@ -15,7 +15,7 @@ import {
 
 import { countLeft, filterTodos } from '../todoHelpers';
 
-export default function TodoListPage() {
+export default function TodoListPage({ token, onAuthError }) {
   const [todos, setTodos] = useState([]);
   const [mode, setMode] = useState('all');
   const [loading, setLoading] = useState(true);
@@ -23,15 +23,29 @@ export default function TodoListPage() {
   const [error, setError] = useState('');
   const [usingLocalStorage, setUsingLocalStorage] = useState(false);
 
+  // HANDLE API ERRORS
+  function handleRequestError(error, message) {
+    if (error.status === 401) {
+      onAuthError();
+      return;
+    }
+
+    setError(message);
+  }
+
+  // LOAD TODOS
   async function load() {
     setLoading(true);
     setError('');
 
     try {
-      const data = await getTodos('all');
+      const data = await getTodos(token, 'all');
       setTodos(Array.isArray(data) ? data : []);
-    } catch {
-      setError('Unable to load todos. Please try again.');
+    } catch (error) {
+      handleRequestError(
+        error,
+        'Unable to load todos. Please try again.'
+      );
     } finally {
       setUsingLocalStorage(isUsingLocalStorage());
       setLoading(false);
@@ -40,20 +54,24 @@ export default function TodoListPage() {
 
   useEffect(() => {
     load();
-  }, []);
+  }, [token]);
 
   const visibleTodos = filterTodos(todos, mode);
 
+  // ADD TODO
   async function handleAdd(text) {
     setBusy(true);
     setError('');
 
     try {
-      const todo = await createTodo(text);
+      const todo = await createTodo(token, text);
       setTodos(current => [...current, todo]);
       return true;
-    } catch {
-      setError('Unable to add todo. Please try again.');
+    } catch (error) {
+      handleRequestError(
+        error,
+        'Unable to add todo. Please try again.'
+      );
       return false;
     } finally {
       setUsingLocalStorage(isUsingLocalStorage());
@@ -61,14 +79,16 @@ export default function TodoListPage() {
     }
   }
 
+  // TOGGLE TODO
   async function handleToggle(id) {
     const todo = todos.find(item => item.id === id);
+
     if (!todo) return;
 
     setError('');
 
     try {
-      const updated = await patchTodo(id, {
+      const updated = await patchTodo(token, id, {
         done: !todo.done
       });
 
@@ -77,23 +97,31 @@ export default function TodoListPage() {
           item.id === id ? updated : item
         )
       );
-    } catch {
-      setError('Unable to update todo. Please try again.');
+    } catch (error) {
+      handleRequestError(
+        error,
+        'Unable to update todo. Please try again.'
+      );
     } finally {
       setUsingLocalStorage(isUsingLocalStorage());
     }
   }
 
+  // DELETE TODO
   async function handleDelete(id) {
     setError('');
 
     try {
-      await removeTodo(id);
+      await removeTodo(token, id);
+
       setTodos(current =>
         current.filter(item => item.id !== id)
       );
-    } catch {
-      setError('Unable to delete todo. Please try again.');
+    } catch (error) {
+      handleRequestError(
+        error,
+        'Unable to delete todo. Please try again.'
+      );
     } finally {
       setUsingLocalStorage(isUsingLocalStorage());
     }
@@ -107,7 +135,8 @@ export default function TodoListPage() {
 
       {usingLocalStorage && (
         <p role="status">
-          The todo service is unavailable. Todos are saved in this browser only.
+          The todo service is unavailable.
+          Todos are saved in this browser only.
         </p>
       )}
 

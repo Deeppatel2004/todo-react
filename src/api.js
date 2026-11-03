@@ -1,14 +1,30 @@
+
 const BASE = import.meta.env.VITE_API_URL;
 const STORAGE_KEY = 'todo-react.todos.v1';
 
 let useLocalStorage = false;
 
-function requestInit(method = 'GET', body = undefined) {
+// =====================================
+// AUTH HEADER HELPER
+// =====================================
+
+function authHeaders(token = null) {
+  return {
+    'Content-Type': 'application/json',
+    ...(token && {
+      Authorization: `Bearer ${token}`
+    })
+  };
+}
+
+// =====================================
+// REQUEST HELPER
+// =====================================
+
+function requestInit(method = 'GET', body = undefined, token = null) {
   return {
     method,
-    headers: {
-      'Content-Type': 'application/json'
-    },
+    headers: authHeaders(token),
     ...(body !== undefined && {
       body: JSON.stringify(body)
     })
@@ -19,7 +35,16 @@ async function request(path, options = requestInit()) {
   const res = await fetch(`${BASE}${path}`, options);
 
   if (!res.ok) {
-    const error = new Error(String(res.status));
+    let message = String(res.status);
+
+    try {
+      const data = await res.json();
+      message = data.message || data.error || message;
+    } catch {
+      // Keep the status as the error message.
+    }
+
+    const error = new Error(message);
     error.status = res.status;
     throw error;
   }
@@ -31,8 +56,31 @@ async function request(path, options = requestInit()) {
   return res.json();
 }
 
+// =====================================
+// LOGIN + REGISTER
+// =====================================
+
+export async function login(email, password) {
+  return request(
+    '/auth/login',
+    requestInit('POST', { email, password })
+  );
+}
+
+export async function register(email, password) {
+  return request(
+    '/auth/register',
+    requestInit('POST', { email, password })
+  );
+}
+
+// =====================================
+// LOCAL STORAGE HELPERS
+// =====================================
+
 function readStoredTodos() {
   const stored = window.localStorage.getItem(STORAGE_KEY);
+
   if (stored === null) return [];
 
   const todos = JSON.parse(stored);
@@ -53,7 +101,10 @@ function writeStoredTodos(todos) {
 
 function updateStoredTodo(todo) {
   const todos = readStoredTodos();
-  const index = todos.findIndex(item => item.id === todo.id);
+
+  const index = todos.findIndex(
+    item => item.id === todo.id
+  );
 
   if (index === -1) {
     todos.push(todo);
@@ -97,6 +148,10 @@ async function withLocalFallback(remoteOperation, localOperation) {
   }
 }
 
+// =====================================
+// LOCAL TODO HELPERS
+// =====================================
+
 function createLocalTodo(text) {
   const id = globalThis.crypto?.randomUUID?.()
     ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -109,7 +164,9 @@ function createLocalTodo(text) {
 }
 
 function findLocalTodo(id) {
-  const todo = readStoredTodos().find(item => item.id === id);
+  const todo = readStoredTodos().find(
+    item => item.id === id
+  );
 
   if (!todo) {
     throw new Error('404');
@@ -122,14 +179,21 @@ export function isUsingLocalStorage() {
   return useLocalStorage;
 }
 
-export async function getTodos(mode = 'all') {
+// =====================================
+// GET ALL TODOS
+// =====================================
+
+export async function getTodos(token, mode = 'all') {
   const query = mode === 'all'
     ? ''
     : `?done=${mode === 'done'}`;
 
   const result = await withLocalFallback(
     async () => {
-      const todos = await request(`/todos${query}`);
+      const todos = await request(
+        `/todos${query}`,
+        requestInit('GET', undefined, token)
+      );
 
       if (!Array.isArray(todos)) {
         throw new Error('The todo API returned an invalid list.');
@@ -159,9 +223,16 @@ export async function getTodos(mode = 'all') {
   return result.value;
 }
 
-export async function getTodo(id) {
+// =====================================
+// GET SINGLE TODO
+// =====================================
+
+export async function getTodo(token, id) {
   const result = await withLocalFallback(
-    () => request(`/todos/${encodeURIComponent(id)}`),
+    () => request(
+      `/todos/${encodeURIComponent(id)}`,
+      requestInit('GET', undefined, token)
+    ),
     () => findLocalTodo(id)
   );
 
@@ -172,9 +243,16 @@ export async function getTodo(id) {
   return result.value;
 }
 
-export async function createTodo(text) {
+// =====================================
+// CREATE TODO
+// =====================================
+
+export async function createTodo(token, text) {
   const result = await withLocalFallback(
-    () => request('/todos', requestInit('POST', { text })),
+    () => request(
+      '/todos',
+      requestInit('POST', { text }, token)
+    ),
     () => {
       const todo = createLocalTodo(text);
       updateStoredTodo(todo);
@@ -189,11 +267,15 @@ export async function createTodo(text) {
   return result.value;
 }
 
-export async function patchTodo(id, changes) {
+// =====================================
+// UPDATE TODO
+// =====================================
+
+export async function patchTodo(token, id, changes) {
   const result = await withLocalFallback(
     () => request(
       `/todos/${encodeURIComponent(id)}`,
-      requestInit('PATCH', changes)
+      requestInit('PATCH', changes, token)
     ),
     () => {
       const todo = {
@@ -213,11 +295,15 @@ export async function patchTodo(id, changes) {
   return result.value;
 }
 
-export async function removeTodo(id) {
+// =====================================
+// DELETE TODO
+// =====================================
+
+export async function removeTodo(token, id) {
   const result = await withLocalFallback(
     () => request(
       `/todos/${encodeURIComponent(id)}`,
-      requestInit('DELETE')
+      requestInit('DELETE', undefined, token)
     ),
     () => {
       writeStoredTodos(

@@ -1,8 +1,9 @@
+
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { getTodo } from '../api';
 
-export default function TodoDetailPage() {
+export default function TodoDetailPage({ token, onAuthError }) {
   const { id } = useParams();
 
   const [todo, setTodo] = useState(null);
@@ -13,16 +14,24 @@ export default function TodoDetailPage() {
     let cancelled = false;
 
     async function loadTodo() {
+      setLoading(true);
+      setError('');
+
       try {
-        const data = await getTodo(id);
+        const data = await getTodo(token, id);
 
         if (!cancelled) {
           setTodo(data);
         }
       } catch (err) {
         if (!cancelled) {
+          if (err.status === 401) {
+            onAuthError();
+            return;
+          }
+
           setError(
-            err.message === '404'
+            err.status === 404
               ? 'Todo not found'
               : 'Unable to load todo. Please try again.'
           );
@@ -39,7 +48,7 @@ export default function TodoDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, token, onAuthError]);
 
   if (loading) {
     return <p>Loading...</p>;
@@ -57,6 +66,7 @@ export default function TodoDetailPage() {
   return (
     <section className="detail">
       <h2>Todo Details</h2>
+
       <h3>{todo.text}</h3>
 
       <p>
